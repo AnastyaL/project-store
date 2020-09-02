@@ -6,6 +6,8 @@ const items = ['Notebook', 'Display', 'Keyboard', 'Mouse', 'Phones', 'Router', '
 const prices = [1000, 200, 20, 10, 25, 30, 18, 24];
 const ids = [1, 2, 3, 4, 5, 6, 7, 8];
 
+let userCart = []
+
 function fetchData () {
 	let arr = [];
 	for (let i = 0; i < items.length; i++) {
@@ -66,6 +68,8 @@ class Item {
 					</div>
 				</div>`
 	}
+	
+
 }
 
 class ProductsList extends List {
@@ -75,7 +79,9 @@ class ProductsList extends List {
 }
 
 class Cart extends List {
-
+	constructor (container = '.cart-block') {
+		super (container)
+	}
 }
 
 class ProductItem extends Item {
@@ -91,13 +97,16 @@ let lists = {
 	Cart: CartItem,
 }
 
+let pr = new ProductsList()
+
+
 //Глобальные сущности 
 // var list = fetchData ();
 // var userCart = [];
 
-// document.querySelector ('.btn-cart').addEventListener ('click', () => {
-// 	document.querySelector ('.cart-block').classList.toggle ('invisible')
-// })
+document.querySelector ('.btn-cart').addEventListener ('click', () => {
+	document.querySelector ('.cart-block').classList.toggle ('invisible')
+})
 
 // document.querySelector ('.products').addEventListener ('click', (evt) => {
 // 	if (evt.target.classList.contains ('buy-btn')) {

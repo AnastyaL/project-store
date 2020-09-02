@@ -1,0 +1,42 @@
+[
+  {
+    "id_product" : 123,
+    "product_name": "Ноутбук",
+    "price": 45600
+  },
+   {
+    "id_product" : 234,
+    "product_name": "Монитор",
+    "price": 8800
+  },
+   {
+    "id_product" : 345,
+    "product_name": "Моноблок",
+    "price": 12300
+  },
+   {
+    "id_product" : 456,
+    "product_name": "Мышь",
+    "price": 3400
+  },
+   {
+    "id_product" : 567,
+    "product_name": "МФУ",
+    "price": 56700
+  },
+   {
+    "id_product" : 678,
+    "product_name": "Клавиатура",
+    "price": 4500
+  },
+   {
+    "id_product" : 789,
+    "product_name": "Ноутбук",
+    "price": 56700
+  },
+   {
+    "id_product" : 890,
+    "product_name": "Ноутбук",
+    "price": 49900
+  }
+]
