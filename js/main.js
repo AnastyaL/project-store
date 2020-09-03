@@ -1,25 +1,23 @@
 //заглушки (имитация базы данных)
 const image = 'https://placehold.it/200x150';
 const cartImage = 'https://placehold.it/100x80';
+const API_URL = 'https://raw.githubusercontent.com/AnastyaL/project-store/load_json/product_base.json';
 
-const items = ['Notebook', 'Display', 'Keyboard', 'Mouse', 'Phones', 'Router', 'USB-camera', 'Gamepad'];
-const prices = [1000, 200, 20, 10, 25, 30, 18, 24];
-const ids = [1, 2, 3, 4, 5, 6, 7, 8];
+// const items = ['Notebook', 'Display', 'Keyboard', 'Mouse', 'Phones', 'Router', 'USB-camera', 'Gamepad'];
+// const prices = [1000, 200, 20, 10, 25, 30, 18, 24];
+// const ids = [1, 2, 3, 4, 5, 6, 7, 8];
 
 let userCart = []
 
-function fetchData () {
-	let arr = [];
-	for (let i = 0; i < items.length; i++) {
-		arr.push({
-			id: ids[i],
-			title: items[i],
-			price: prices[i],
-			img: image
-		})
+function makeGETRequest(url,callback) {var xhr;
+	if (window.XMLHttpRequest) { xhr = new XMLHttpRequest();
+	} else if (window.ActiveXObject) {
+	xhr = new ActiveXObject("Microsoft.XMLHTTP"); }
+	xhr.onreadystatechange = function () {if (xhr.readyState === 4){
+	callback(xhr.responseText); }
 	}
-	return arr
-}
+	xhr.open('GET', url, true);
+	xhr.send(); }
 
 class List {
 	constructor (container) {
@@ -27,7 +25,7 @@ class List {
 		this.goods = []
 		this._init()
 		this.allProducts = []
-		this.handleData(fetchData())
+		//this.handleData(fetchGoods())
 	}
 	_init() {
 		return false
@@ -40,18 +38,13 @@ class List {
 			block.insertAdjacentHTML ('beforeend', prod.render())
 		}
 	}
-
-	handleData(data) {
-		this.goods = [...data]
-		this._render()
-	}
 }
 
 class Item {
 	constructor (el, img = 'https://placehold.it/200x150') {
-		this.product_name = el.title
+		this.product_name = el.product_name
 		this.price = el.price
-		this.id_product = el.id
+		this.id_product = el.id_product
 		this.img = img
 	}
 	render() {
@@ -76,6 +69,12 @@ class ProductsList extends List {
 	constructor (container = '.products') {
 		super (container)
 	}
+
+	fetchGoods () {	
+		makeGETRequest (API_URL, (goods) => {this.goods = JSON.parse(goods)
+		this._render()
+		});
+	}
 }
 
 class Cart extends List {
@@ -98,6 +97,7 @@ let lists = {
 }
 
 let pr = new ProductsList()
+pr.fetchGoods()
 
 
 //Глобальные сущности 
