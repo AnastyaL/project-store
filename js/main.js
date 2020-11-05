@@ -1,7 +1,7 @@
 //заглушки (имитация базы данных)
 const image = 'https://placehold.it/200x150';
 const cartImage = 'https://placehold.it/100x80';
-const API_URL = 'https://raw.githubusercontent.com/AnastyaL/project-store/load_json/product_base.json';
+const API_URL = 'https://raw.githubusercontent.com/AnastyaL/project-store/master/json';
 
 let userCart = []
 
@@ -18,11 +18,11 @@ class List {
 		return false
 	} 
 	getJSON(url) {
-		return fetch(url ? url : `${API_URL}`)
+		return fetch(url ? url : `${API_URL + this.url}`)
 			.then(result => result.json())
 			.catch(error => {console.log(error)})
 	}
-	_render () {
+	render () {
 		const block = document.querySelector(this.container)
 		for (let product of this.goods) {
 			const prod = new lists[this.constructor.name] (product)
@@ -32,7 +32,7 @@ class List {
 	}
 	handleData (data) {
 		this.goods = [...data]
-		this._render()
+		this.render()
 	}
 }
 
@@ -62,7 +62,7 @@ class Item {
 }
 
 class ProductsList extends List {
-	constructor (cart, url = `${API_URL}`, container = '.products') {
+	constructor (cart, url = `/product_base.json`, container = '.products') {
 		super (url, container)
 		this.cart = cart
 		this.getJSON()
@@ -71,6 +71,7 @@ class ProductsList extends List {
 	_init() {
 		document.querySelector(this.container).addEventListener('click', evt=>{
 			if (evt.target.classList.contains('buy-btn')) {
+				evt.preventDefault()
 				this.cart.addProduct(evt.target)
 			}
 		})
@@ -78,17 +79,17 @@ class ProductsList extends List {
 }
 
 class Cart extends List {
-	constructor (cart, url= `{API_URL}`, container = '.cart-block') {
+	constructor (cart, url= `/getBasket.json`, container = '.cart-block') {
 		super(url, container)
 		this.getJSON()
 			.then (data => this.handleData(data.contents))
 	}
 	addProduct (element) {
-		this.getJSON(`${API_URL}`)
+		this.getJSON(`${API_URL}/addToBasket.json`)
 			.then(data =>{
 				if (data.result) {
 					let productID = +element.dataset['id']
-					let find = this.allProducts.find(product =>product.id_product ===productID)
+					let find = this.allProducts.find(product => product.id_product === productID)
 					if (find) {
 						find.quantity++
 						this._updateCart(find)
@@ -108,12 +109,12 @@ class Cart extends List {
 			})
 	}
 	removeProduct(element){
-		this.getJSON(`${API_URL}`)
+		this.getJSON(`${API_URL}/removeFromBasket.json`)
 			.then(data =>{
 				if (data.result) {
 					let productId = +element.dataset['id']
-					let find = this.allProducts.find(product =>product.id_product ===productId)
-					if (find>1) {
+					let find = this.allProducts.find(product => product.id_product === productId)
+					if (find.quantity>1) {
 						find.quantity--
 						this._updateCart(find) 
 					} else {
@@ -136,7 +137,7 @@ class Cart extends List {
 	_updateCart(product) {
 		let block = document.querySelector(`.cart-item[data-id="${product.id_product}"]`)
 		block.querySelector('.product-quantity').textContent = `${product.quantity}`
-		block.querySelector('.product-price').textContent = `${product.quantiy}*${product.price}`
+		block.querySelector('.product-price').textContent = `${product.quantity}*${product.price}`
 	}
 }
 
@@ -147,7 +148,7 @@ class ProductItem extends Item {
 class CartItem extends Item {
 	constructor (el, img = 'https://placehold.it/50x100') {
 		super (el, img)
-		this.quantity = el.quantiy
+		this.quantity = el.quantity
 	}
 	render() {
 		return `<div class="cart-item" data-id="${this.id_product}">
@@ -161,7 +162,7 @@ class CartItem extends Item {
 					</div>
 					<div class="right-block">
 						<p class="product-price">${this.quantity*this.price}</p>
-						<button class="del-btn" data-id="${this.product}">&times;</button>
+						<button class="del-btn" data-id="${this.id_product}">&times;</button>
 					</div>
 				</div>
 				`
@@ -173,8 +174,8 @@ let lists = {
 	Cart: CartItem,
 }
 
-let cart = new Cart
-let pr = new ProductsList()
+let cart = new Cart()
+let pr = new ProductsList(cart)
 
 
 // document.querySelector ('.btn-cart').addEventListener ('click', () => {
