@@ -3,33 +3,25 @@ const image = 'https://placehold.it/200x150';
 const cartImage = 'https://placehold.it/100x80';
 const API_URL = 'https://raw.githubusercontent.com/AnastyaL/project-store/load_json/product_base.json';
 
-// const items = ['Notebook', 'Display', 'Keyboard', 'Mouse', 'Phones', 'Router', 'USB-camera', 'Gamepad'];
-// const prices = [1000, 200, 20, 10, 25, 30, 18, 24];
-// const ids = [1, 2, 3, 4, 5, 6, 7, 8];
-
 let userCart = []
 
-function makeGETRequest(url,callback) {var xhr;
-	if (window.XMLHttpRequest) { xhr = new XMLHttpRequest();
-	} else if (window.ActiveXObject) {
-	xhr = new ActiveXObject("Microsoft.XMLHTTP"); }
-	xhr.onreadystatechange = function () {if (xhr.readyState === 4){
-	callback(xhr.responseText); }
-	}
-	xhr.open('GET', url, true);
-	xhr.send(); }
-
 class List {
-	constructor (container) {
-		this. container = container
+	constructor (url, container) {
+		this.container = container
 		this.goods = []
 		this._init()
 		this.allProducts = []
+		this.url = url
 		//this.handleData(fetchGoods())
 	}
 	_init() {
 		return false
 	} 
+	getJSON(url) {
+		return fetch(url ? url : `${API_URL}`)
+			.then(result => result.json())
+			.catch(error => {console.log(error)})
+	}
 	_render () {
 		const block = document.querySelector(this.container)
 		for (let product of this.goods) {
@@ -37,6 +29,10 @@ class List {
 			this.allProducts.push(prod)
 			block.insertAdjacentHTML ('beforeend', prod.render())
 		}
+	}
+	handleData (data) {
+		this.goods = [...data]
+		this._render()
 	}
 }
 
@@ -48,7 +44,7 @@ class Item {
 		this.img = img
 	}
 	render() {
-		return `<div class="product-item" data-id=${this.id_product}>
+		return `<div class="product-item" data-id="${this.id_product}">
 					<img src="${this.img}" alt="Some img">
 					<div class="desc">
 						<h3>${this.product_name}</h3>
@@ -66,20 +62,81 @@ class Item {
 }
 
 class ProductsList extends List {
-	constructor (container = '.products') {
-		super (container)
+	constructor (cart, url = `${API_URL}`, container = '.products') {
+		super (url, container)
+		this.cart = cart
+		this.getJSON()
+			.then(data =>this.handleData(data))
 	}
-
-	fetchGoods () {	
-		makeGETRequest (API_URL, (goods) => {this.goods = JSON.parse(goods)
-		this._render()
-		});
+	_init() {
+		document.querySelector(this.container).addEventListener('click', evt=>{
+			if (evt.target.classList.contains('buy-btn')) {
+				this.cart.addProduct(evt.target)
+			}
+		})
 	}
 }
 
 class Cart extends List {
-	constructor (container = '.cart-block') {
-		super (container)
+	constructor (cart, url= `{API_URL}`, container = '.cart-block') {
+		super(url, container)
+		this.getJSON()
+			.then (data => this.handleData(data.contents))
+	}
+	addProduct (element) {
+		this.getJSON(`${API_URL}`)
+			.then(data =>{
+				if (data.result) {
+					let productID = +element.dataset['id']
+					let find = this.allProducts.find(product =>product.id_product ===productID)
+					if (find) {
+						find.quantity++
+						this._updateCart(find)
+					} else {
+						let product = {
+							id_product: productID,
+							price: +element.dataset['price'],
+							product_name: element.dataset['name'],
+							quantity: 1
+						}
+						this.goods=[product]
+						this.render()
+					}
+				} else {
+					console.log('some err')
+				}
+			})
+	}
+	removeProduct(element){
+		this.getJSON(`${API_URL}`)
+			.then(data =>{
+				if (data.result) {
+					let productId = +element.dataset['id']
+					let find = this.allProducts.find(product =>product.id_product ===productId)
+					if (find>1) {
+						find.quantity--
+						this._updateCart(find) 
+					} else {
+						this.allProducts.splice(this.allProducts.indexOf(find),1)
+						document.querySelector(`.cart-item[data-id="${productId}"]`).remove()
+					}
+				}
+			})
+	}
+	_init(){
+		document.querySelector(this.container).addEventListener('click', evt =>{
+			if (evt.target.classList.contains('del-btn')) {
+				this.removeProduct(evt.target)
+			}
+		})
+		document.querySelector('.btn-cart').addEventListener('click', () =>{
+			document.querySelector(this.container).classList.toggle('invisible')
+		})
+	}
+	_updateCart(product) {
+		let block = document.querySelector(`.cart-item[data-id="${product.id_product}"]`)
+		block.querySelector('.product-quantity').textContent = `${product.quantity}`
+		block.querySelector('.product-price').textContent = `${product.quantiy}*${product.price}`
 	}
 }
 
@@ -88,7 +145,27 @@ class ProductItem extends Item {
 }
 
 class CartItem extends Item {
-
+	constructor (el, img = 'https://placehold.it/50x100') {
+		super (el, img)
+		this.quantity = el.quantiy
+	}
+	render() {
+		return `<div class="cart-item" data-id="${this.id_product}">
+					<div class="product-bio">
+						<img src="${this.img}" alt="Some img">
+						<div class="product-desc">
+							<p class="product-title">${this.product_name}</p>
+							<p class="product-quantity">К-во: ${this.quantity}</p>
+							<p class="product-single-price">${this.price}</p>
+						</div>
+					</div>
+					<div class="right-block">
+						<p class="product-price">${this.quantity*this.price}</p>
+						<button class="del-btn" data-id="${this.product}">&times;</button>
+					</div>
+				</div>
+				`
+	}
 }
 
 let lists = {
@@ -96,125 +173,13 @@ let lists = {
 	Cart: CartItem,
 }
 
+let cart = new Cart
 let pr = new ProductsList()
-pr.fetchGoods()
 
 
-//Глобальные сущности 
-// var list = fetchData ();
-// var userCart = [];
-
-document.querySelector ('.btn-cart').addEventListener ('click', () => {
-	document.querySelector ('.cart-block').classList.toggle ('invisible')
-})
-
-// document.querySelector ('.products').addEventListener ('click', (evt) => {
-// 	if (evt.target.classList.contains ('buy-btn')) {
-// 		addProduct (evt.target);
-// 	}
+// document.querySelector ('.btn-cart').addEventListener ('click', () => {
+// 	document.querySelector ('.cart-block').classList.toggle ('invisible')
 // })
 
-// document.querySelector ('.cart-block').addEventListener ('click', (evt) => {
-// 	if (evt.target.classList.contains ('del-btn')) {
-// 		removeProduct (evt.target);
-// 	}
-// })
 
-// function fetchData () {
-// 	let arr = [];
-// 	for (let i = 0; i < items.length; i++) {
-// 		arr.push (createProduct (i));
-// 	}
-// 	return arr
-// }
-
-// function createProduct (i) {
-// 	return {
-// 		id: i,
-// 		name: items[i],
-// 		price: prices[i],
-// 		img: image,
-// 		quantity: 0,
-// 		createTemplate: function () {
-// 			return `<div class="product-item" data-id="${this.id}">
-//                         <img src="${this.img}" alt="Some img">
-//                         <div class="desc">
-//                             <h3>${this.name}</h3>
-//                             <p>${this.price} $</p>
-//                             <button class="buy-btn" 
-//                             data-id="${this.id}"
-//                             data-name="${this.name}"
-//                             data-image="${this.img}"
-//                             data-price="${this.price}">Купить</button>
-//                         </div>
-//                     </div>`
-// 		}
-// 	}
-// }
-
-// function renderProducts () {
-// 	let arr = [];
-// 	for (item of list) {
-// 		arr.push (item.createTemplate ())
-// 	}
-// 	document.querySelector ('.products').innerHTML = arr.join ('');
-// }
-
-// renderProducts ();
-
-
-// //CART
-// function addProduct (product) {
-// 	let productId = +product.dataset['id'];
-// 	let find = userCart.find (element => element.id === productId)
-// 	//либо find = userCart [?] (obj) || false
-
-// 	if (!find) {
-// 		userCart.push ({
-// 			name: product.dataset['name'],
-// 			id: productId,
-// 			img: cartImage,
-// 			price: +product.dataset['price'],
-// 			quantity: 1
-// 		})
-// 	} else {
-// 		find.quantity++
-// 	}
-// 	renderCart ();
-// }	
-
-// function removeProduct (product) {
-// 	let productId = +product.dataset['id'];
-// 	let find = userCart.find (element => element.id === productId)
-// 	//либо find = userCart [?] (obj) || false
-
-// 	if (find.quantity > 1) {
-// 		find.quantity--
-// 	} else {
-// 		userCart.splice (userCart.indexOf(find), 1);
-// 		document.querySelector (`.cart-item[data-id="${productId}"]`).remove ()
-// 	}
-// 	renderCart ();
-// }
-
-// function renderCart () {
-// 	let allProducts = '';
-// 	for (item of userCart) {
-// 		allProducts += `<div class="cart-item" data-id="${item.id}">
-//                             <div class="product-bio">
-//                                 <img src="${item.img}" alt="Some image">
-//                                 <div class="product-desc">
-//                                     <p class="product-title">${item.name}</p>
-//                                     <p class="product-quantity">Quantity: ${item.quantity}</p>
-//                                     <p class="product-single-price">$${item.price} each</p>
-//                                 </div>
-//                             </div>
-//                             <div class="right-block">
-//                                 <p class="product-price">${item.quantity * item.price}</p>
-//                                 <button class="del-btn" data-id="${item.id}">&times;</button>
-//                             </div>
-//                         </div>`
-// 	}
-// 	document.querySelector ('.cart-block').innerHTML = allProducts;
-// }
 
